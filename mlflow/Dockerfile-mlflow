@@ -1,0 +1,16 @@
+# Use a lightweight Python base image
+FROM python:3.10-slim
+
+# Install MLflow and any additional packages
+COPY requirements.txt /tmp/requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
+
+# Create directories for backend store (SQLite)
+RUN mkdir -p /mlflow/db
+
+# Expose port for MLflow server
+EXPOSE 5000
+
+# Start MLflow server with default configuration
+# Note: --default-artifact-root will be overridden by docker-compose (local) or ECS (cloud)
+CMD ["mlflow", "server", "--host", "0.0.0.0", "--port", "5000", "--backend-store-uri", "sqlite:///mlflow/db/mlflow.db", "--default-artifact-root", "s3://mlflow-artifacts/"]

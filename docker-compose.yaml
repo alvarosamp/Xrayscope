@@ -1,0 +1,89 @@
+services:
+  minio:
+    image: minio/minio
+    container_name: minio_container
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    networks:
+      - mlops_xray_network
+    restart: unless-stopped
+
+  create-buckets:
+    image: minio/mc
+    depends_on:
+      - minio
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    entrypoint: /bin/sh -c "chmod +x /scripts/create-bucket.sh && /scripts/create-bucket.sh"
+    volumes:
+      - ./minio/create-bucket.sh:/scripts/create-bucket.sh
+      - ./source/xray:/data/datasource
+    networks:
+      - mlops_xray_network
+
+  mlflow:
+    build:
+      context: ./mlflow
+      dockerfile: Dockerfile-mlflow
+    ports:
+      - "5000:5000"
+    environment:
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - MLFLOW_S3_ENDPOINT_URL=${MLFLOW_S3_ENDPOINT_URL}
+    command: mlflow server --host 0.0.0.0 --port 5000 --backend-store-uri sqlite:///mlflow.db --default-artifact-root s3://mlflow-artifacts/
+    networks:
+      - mlops_xray_network
+    container_name: mlflow_container
+    restart: unless-stopped
+
+  model:
+    build:
+      context: ./model
+      dockerfile: Dockerfile-model
+    depends_on:
+      - create-buckets
+      - mlflow
+    environment:
+      - MLFLOW_TRACKING_URI=${MLFLOW_TRACKING_URI}
+      - MLFLOW_S3_ENDPOINT_URL=${MLFLOW_S3_ENDPOINT_URL}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AUTO_REGISTER=${AUTO_REGISTER}
+    networks:
+      - mlops_xray_network
+    container_name: model_container
+    restart: "no"
+
+  webapp:
+    build:
+      context: ./webapp
+      dockerfile: Dockerfile-webapp
+    ports:
+      - "5001:5001"
+    depends_on:
+      - model
+    environment:
+      - MLFLOW_TRACKING_URI=${MLFLOW_TRACKING_URI}
+      - MLFLOW_S3_ENDPOINT_URL=${MLFLOW_S3_ENDPOINT_URL}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+    networks:
+      - mlops_xray_network
+    container_name: webapp_container
+    restart: always
+
+networks:
+  mlops_xray_network:
+    name: mlops_xray_network
+
+volumes:
+  minio_data:

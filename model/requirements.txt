@@ -1,0 +1,10 @@
+scikit-learn
+mlflow==3.4.0
+watermark
+pandas
+numpy==2.0.2
+boto3
+opencv-python
+PyYAML
+python-dotenv
+fluent-logger

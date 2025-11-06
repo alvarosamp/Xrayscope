@@ -1,0 +1,6 @@
+mlflow==3.4.0
+numpy
+opencv-python
+scikit-learn
+boto3
+jupyterlab
