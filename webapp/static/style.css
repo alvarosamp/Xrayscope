@@ -1,0 +1,105 @@
+/* Basic styles for the interface */
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background: #f5f5f5;
+}
+
+.site-header {
+  background: #333;
+  color: #fff;
+  padding: 10px;
+  text-align: center;
+}
+
+.site-header a {
+  color: #fff;
+  margin: 0 10px;
+  text-decoration: none;
+}
+
+.diagnosis-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+}
+
+.image-preview-container {
+  width: 80%;
+  max-width: 500px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.image-preview-container img {
+  max-width: 100%;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  display: none;
+}
+
+/* Styles for Drag & Drop area */
+.drop-zone {
+  width: 80%;
+  max-width: 500px;
+  height: 150px;
+  border: 2px dashed #007bff;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+  color: #007bff;
+  font-size: 18px;
+}
+
+.upload-controls {
+  margin-bottom: 20px;
+}
+
+.upload-controls input[type="file"] {
+  display: none;
+}
+
+.upload-controls button {
+  margin: 0 5px;
+  padding: 10px 15px;
+  background: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.upload-controls button:hover {
+  background: #0056b3;
+}
+
+.result-container {
+  width: 80%;
+  max-width: 500px;
+  background: #fff;
+  border: 1px solid #ddd;
+  padding: 15px;
+  border-radius: 5px;
+  text-align: center;
+}
+
+/* Styles for footer with model information */
+.model-info-footer {
+  width: 100%;
+  padding: 10px 0;
+  text-align: center;
+  background: #e0e0e0;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+}
+
+.model-info-footer p {
+  margin: 5px 0 0;
+  font-size: 0.9em;
+  color: #555;
+}

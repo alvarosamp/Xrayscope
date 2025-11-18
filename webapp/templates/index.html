@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>X-Ray App</title>
+  <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <h1>AI Powered X-Ray Diagnosis</h1>
+    <a href="https://www.youtube.com/@datarvw" target="_blank">YouTube</a>
+    <a href="https://github.com/rianbl" target="_blank">Github</a>
+  </header>
+  
+  <div class="diagnosis-wrapper">
+    <!-- Area to preview the uploaded image -->
+    <div class="image-preview-container">
+      <img id="previewImage" src="" alt="Uploaded image preview">
+    </div>
+
+    <!-- Drag & Drop Area -->
+    <div id="dropZone" class="drop-zone">
+      Drag & Drop your image here
+    </div>
+
+    <!-- Upload and Submit Controls -->
+    <div class="upload-controls">
+      <input type="file" id="imageInput" accept="image/*" onchange="handleFileSelect(event)">
+      <button id="browseButton" onclick="document.getElementById('imageInput').click()">Browse</button>
+      <button id="submitButton" onclick="submitImage()">Submit for Diagnosis</button>
+      <button id="removeButton" onclick="removeImage()" style="display: none;">Remove</button>
+    </div>
+
+    <!-- Diagnosis Result Display -->
+    <div class="result-container">
+      <h2>Diagnosis Result:</h2>
+      <div id="diagnosisResult">No diagnosis yet.</div>
+      <div id="feedbackContainer" style="display:none;">
+        <p>Was it useful?</p>
+        <button onclick="sendFeedback('Positive')">👍</button>
+        <button onclick="sendFeedback('Negative')">👎</button>
+      </div>      
+    </div>
+  </div>
+
+  <!-- Footer with model info and disclaimer -->
+  <footer class="model-info-footer">
+    <div id="modelInfo"><strong>Model: N/A - Version: N/A</strong></div>
+    <p>As all AI models may present errors.</p>
+  </footer>
+  
+  <script src="static/script.js"></script>
+</body>
+</html>
