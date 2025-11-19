@@ -1,4 +1,26 @@
-# Byte-compiled / optimized / DLL files
+# Ignorar variáveis de ambiente locais
+.env
+
+# Byte-compiled / build artifacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# Virtual environment
+.venv/
+venv/
+
+# Docker related
+.env.local
+docker-compose.override.yml
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS files
+.DS_Store# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
