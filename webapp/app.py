@@ -173,11 +173,13 @@ logger.info("Webapp started - model loading in background")
 def get_model_info():
     # Query MLflow on each request to reflect the current version.
     info = get_current_model_info()
-    logger.info("Model info retrieved", extra={
+    logger.info("Informacoes do modelo recuperadas", extra={
         "event": "model_info",
         "info": info
     })
-    return jsonify(info)
+    # Retornar em português
+    version = info.get("version") if info else "N/A"
+    return jsonify({"modelo": info.get("name"), "versao": version})
 
 @app.route("/")
 def home():
@@ -187,58 +189,62 @@ def home():
 def predict():
     global model
     if model is None:
-        logger.error("Prediction attempt with no model loaded", extra={
+        logger.error("Tentativa de previsao sem modelo carregado", extra={
             "event": "prediction_failure",
             "reason": "no_model"
         })
-        return jsonify({"error": "Model not found"}), 500
+        return jsonify({"erro": "Modelo não encontrado"}), 500
     try:
         data = request.get_json(silent=True)
         if not data or "features" not in data:
-            raise ValueError("Request JSON must include 'features' array.")
+            raise ValueError("O JSON deve incluir o array 'features'.")
 
         features = np.array(data["features"]).reshape(1, -1)
         prediction = model.predict(features)[0]
-        logger.info("Prediction successful", extra={
+        # Mapear para rótulo legível
+        label_map = {0: "Normal", 1: "Pneumonia"}
+        label = label_map.get(int(prediction), str(prediction))
+        logger.info("Previsao realizada com sucesso", extra={
             "event": "prediction",
-            "result": int(prediction)
+            "result": int(prediction),
+            "label": label
         })
-        return jsonify({"prediction": int(prediction)})
+        return jsonify({"previsao_codigo": int(prediction), "previsao_label": label})
     except Exception as e:
-        logger.error("Error during prediction", extra={
+        logger.error("Erro durante previsao", extra={
             "event": "prediction_error",
             "error": str(e)
         })
         logger.error(traceback.format_exc())
-        return jsonify({"error": str(e)}), 400
+        return jsonify({"erro": str(e)}), 400
 
 @app.route("/diagnose", methods=["POST"])
 def diagnose():
     global model
     if model is None:
-        logger.error("Diagnosis attempt with no model loaded", extra={
+        logger.error("Tentativa de diagnostico sem modelo carregado", extra={
             "event": "diagnosis_failure",
             "reason": "no_model"
         })
-        return jsonify({"error": "Model not found"}), 500
+        return jsonify({"erro": "Modelo não encontrado"}), 500
 
     start_time = time.time()  # Start timing the diagnosis
     try:
         if 'image' not in request.files:
-            logger.error("No image file provided for diagnosis", extra={
+            logger.error("Nenhuma imagem fornecida para diagnostico", extra={
                 "event": "diagnosis_error",
                 "reason": "no_image"
             })
-            return jsonify({"error": "No image file provided."}), 400
+            return jsonify({"erro": "Nenhuma imagem enviada."}), 400
         
         file = request.files['image']
         image_bytes = file.read()
         np_array = np.frombuffer(image_bytes, np.uint8)
         img = cv2.imdecode(np_array, cv2.IMREAD_GRAYSCALE)
         if img is None:
-            raise ValueError("Unable to decode image.")
-        
-        # Process image for diagnosis
+            raise ValueError("Não foi possível decodificar a imagem.")
+
+        # Processar imagem para diagnostico
         img_resized = cv2.resize(img, (64, 64))
         features = img_resized.flatten().reshape(1, -1)
         pneumonia_prob = None
@@ -251,30 +257,32 @@ def diagnose():
             probabilities = np.asarray(probs)[0]
             if len(probabilities) > 1:
                 pneumonia_prob = float(probabilities[1])
-                diagnosis_str = f"Pneumonia Probability: {pneumonia_prob*100:.2f}%"
+                diagnosis_str = f"Probabilidade de Pneumonia: {pneumonia_prob*100:.2f}%"
             else:
-                diagnosis_str = f"Predicted probabilities: {probabilities.tolist()}"
+                diagnosis_str = f"Probabilidades previstas: {probabilities.tolist()}"
         else:
             # Models loaded via mlflow.pyfunc may not expose predict_proba; use predict as fallback
             pred = model.predict(features)[0]
-            diagnosis_str = f"Predicted class: {int(pred)}"
+            label_map = {0: "Normal", 1: "Pneumonia"}
+            label = label_map.get(int(pred), str(pred))
+            diagnosis_str = f"Classe prevista: {label} ({int(pred)})"
         
         inference_time = time.time() - start_time  # Calculate inference time
         
         # Log diagnosis details with structured keys.
-        logger.info("Diagnosis successful", extra={
+        logger.info("Diagnostico realizado com sucesso", extra={
             "event": "diagnosis",
             "diagnosis": diagnosis_str,
             "inference_time_ms": float(f"{inference_time*1000:.2f}")
         })
-        return jsonify({"diagnosis": diagnosis_str, "inference_time": inference_time})
+        return jsonify({"diagnostico": diagnosis_str, "tempo_inferencia_seg": inference_time})
     except Exception as e:
-        logger.error("Error during diagnosis", extra={
+        logger.error("Erro durante diagnostico", extra={
             "event": "diagnosis_error",
             "error": str(e)
         })
         logger.error(traceback.format_exc())
-        return jsonify({"error": str(e)}), 400
+        return jsonify({"erro": str(e)}), 400
 
 @app.route("/feedback", methods=["POST"])
 def feedback():
@@ -286,36 +294,36 @@ def feedback():
     feedback_value = data.get("feedback", "")
     image_id = data.get("image_id", "N/A")
     
-    # Log feedback using structured logging.
-    logger.info("Feedback received", extra={
+    # Registrar feedback usando logging estruturado
+    logger.info("Feedback recebido", extra={
         "event": "user_feedback",
         "image_id": image_id,
         "feedback": feedback_value
     })
-    return jsonify({"message": "Feedback received"}), 200
+    return jsonify({"mensagem": "Feedback recebido"}), 200
 
 @app.route("/reload-model", methods=["POST"])
 def reload_model():
     global model
     global model_thread
     try:
-        logger.info("Reloading model from MLflow", extra={
+        logger.info("Recarregando modelo do MLflow", extra={
             "event": "model_reload_start"
         })
-        model = None  # Reset model
+        model = None  # Resetar modelo
         # Start new background loading
         model_thread = threading.Thread(target=load_model_async, daemon=True)
         model_thread.start()
-        logger.info("Model reload started in background", extra={
+        logger.info("Recarregamento do modelo iniciado em background", extra={
             "event": "model_reload_started"
         })
-        return jsonify({"message": "Model reload started in background"}), 200
+        return jsonify({"mensagem": "Recarregamento do modelo iniciado em background"}), 200
     except Exception as e:
-        logger.error("Error reloading model", extra={
+        logger.error("Erro ao recarregar modelo", extra={
             "event": "model_reload_error",
             "error": str(e)
         })
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"erro": str(e)}), 500
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5001)
